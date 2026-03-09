@@ -421,8 +421,7 @@ static void patch_menu_decorate(t_patch_menu *x, t_symbol * /*s*/, int argc, t_a
         for (int k = 0; k < 4; k++) {
             if (!PAGES[p].controls[k].id) continue;
             if (strcmp(PAGES[p].controls[k].id, id) == 0) {
-                strncpy(x->decorations[p][k], deco, 31);
-                x->decorations[p][k][31] = '\0';
+                snprintf(x->decorations[p][k], sizeof(x->decorations[p][k]), "%s", deco);
                 // Redraw that line if it is currently visible
                 if (p == x->currentPage)
                     send_knob_line(x, p, k);
