@@ -18,7 +18,7 @@ extern "C" {
 // Data model — edit here to define pages for your patch
 // ---------------------------------------------------------------------------
 
-enum class ControlType { Percentage, Multiplier, Float };
+enum class ControlType { Float, Percentage, Multiplier };
 
 struct ControlDef {
     const char  *id;
@@ -38,6 +38,8 @@ struct MenuPage {
     ControlDef  controls[4];
 };
 
+#define INACTIVE_CONTROL { nullptr, nullptr, 0.0f, ControlType::Float, 0.0f, 0.0f, nullptr, 0, NAN }
+
 // --- Example pages matching the spec ---
 
 static const float SPEED_SET[] = {
@@ -53,7 +55,7 @@ static MenuPage PAGES[] = {
             { "vol1", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
             { "vol2", "Volume", 0.2f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
             { "vol3", "Volume", 0.56f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
-            { "vol4", "Volume", 0.8f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
+            INACTIVE_CONTROL,
         }
     },
     {
@@ -66,8 +68,7 @@ static MenuPage PAGES[] = {
               SPEED_SET, SPEED_SET_N, NAN },
             { "speed3", "Speed", 10.0f / 13.0f, ControlType::Multiplier, 0.0f, 0.0f,
               SPEED_SET, SPEED_SET_N, NAN },
-            { "speed4", "Speed", 13.0f / 13.0f, ControlType::Multiplier, 0.0f, 0.0f,
-              SPEED_SET, SPEED_SET_N, NAN },
+            INACTIVE_CONTROL,
         }
     },
 };
@@ -189,6 +190,11 @@ static void send_line_raw(t_patch_menu *x, int lineNum, const char *text)
 static void send_knob_line(t_patch_menu *x, int page, int knob)
 {
     ControlDef &def = PAGES[page].controls[knob];
+    if (!def.id) {
+        send_line_raw(x, knob + 1, "");
+        return;
+    }
+
     float normVal = x->values[page][knob];
     const char *deco = x->decorations[page][knob];
 
@@ -306,6 +312,9 @@ static void patch_menu_knob(t_patch_menu *x, t_symbol * /*s*/, int argc, t_atom 
 
     x->lastKnob[k] = raw;
 
+    ControlDef &def = PAGES[page].controls[k];
+    if (!def.id) return;  // inactive slot on this page
+
     // Soft-takeover latch check
     if (!x->latched[page][k]) {
         float currentNorm = x->values[page][k];
@@ -314,8 +323,6 @@ static void patch_menu_knob(t_patch_menu *x, t_symbol * /*s*/, int argc, t_atom 
         else
             return; // not yet latched — ignore
     }
-
-    ControlDef &def = PAGES[page].controls[k];
 
     float outValue;
     float newNorm;
@@ -411,6 +418,7 @@ static void patch_menu_decorate(t_patch_menu *x, t_symbol * /*s*/, int argc, t_a
     // Find matching control across all pages and update decoration
     for (int p = 0; p < NUM_PAGES; p++) {
         for (int k = 0; k < 4; k++) {
+            if (!PAGES[p].controls[k].id) continue;
             if (strcmp(PAGES[p].controls[k].id, id) == 0) {
                 strncpy(x->decorations[p][k], deco, 31);
                 x->decorations[p][k][31] = '\0';

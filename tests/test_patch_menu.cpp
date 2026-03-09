@@ -540,6 +540,43 @@ static void test_flash_tick_always_redraws() {
 }
 
 // ---------------------------------------------------------------------------
+// Tests — inactive knob slots (id = nullptr)
+// ---------------------------------------------------------------------------
+
+// A page with one inactive slot defined inline for testing.
+// We test by temporarily adding a page; instead we just patch PAGES at runtime.
+
+static void test_inactive_slot_no_output() {
+    // Temporarily nullify vol4 (page 0, knob 3) to simulate an inactive slot.
+    const char *savedId = PAGES[0].controls[3].id;
+    PAGES[0].controls[3].id = nullptr;
+
+    t_patch_menu *x = make_instance();
+    // Knob 4 moves to the active position — should produce no output.
+    send_knob(x, 4, PAGES[0].controls[3].defaultVal);
+    ASSERT_NULL(last_ctrl(x, "vol4"));
+
+    free_instance(x);
+    PAGES[0].controls[3].id = savedId;
+}
+
+static void test_inactive_slot_blank_line() {
+    // Inactive slot should render as a blank OLED line, not a crash.
+    const char *savedId = PAGES[0].controls[3].id;
+    PAGES[0].controls[3].id = nullptr;
+
+    t_patch_menu *x = make_instance();
+    g_msgs.clear();
+    flash_tick(x);  // redraw_all — inactive slot sends empty line
+    const CapturedMsg *line4 = last_line(x, 4);
+    ASSERT_NOTNULL(line4);
+    ASSERT_EQ(std::string(line_text(line4)), std::string(""));
+
+    free_instance(x);
+    PAGES[0].controls[3].id = savedId;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -589,6 +626,10 @@ int main() {
     RUN(test_flash_clock_scheduled_1000ms);
     RUN(test_flash_tick_redraws_all_lines);
     RUN(test_flash_tick_always_redraws);
+
+    printf("--- Inactive knob slots ---\n");
+    RUN(test_inactive_slot_no_output);
+    RUN(test_inactive_slot_blank_line);
 
     printf("\n%d passed, %d failed\n", g_pass, g_fail);
     return g_fail > 0 ? 1 : 0;
