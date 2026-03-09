@@ -88,6 +88,7 @@ t_clock *clock_new(void *owner, t_method fn) {
 }
 void clock_free(t_clock *) {}
 void clock_delay(t_clock *x, double ms) { x->delay = ms; }
+void clock_unset(t_clock *x) { x->delay = -1.0; }
 
 t_class *class_new(t_symbol *, t_newmethod, t_method, size_t size, int, int) {
     g_class.size = size;
@@ -294,12 +295,14 @@ static void go_speed_page_and_latch(t_patch_menu *x, int k) {
 }
 
 static void test_set_knob_default_index() {
-    // speed1 default = 6/13 → index 6 → SPEED_SET[6] = -0.5
+    // default index and expected output value derived from the same constants used in PAGES[]
+    int expectedIdx = set_index(DEFAULT_SPEED, SPEED_SET_N);
+    float expectedVal = SPEED_SET[expectedIdx];
     t_patch_menu *x = make_instance();
     go_speed_page_and_latch(x, 0);
     const CapturedMsg *m = last_ctrl(x, "speed1");
     ASSERT_NOTNULL(m);
-    if (m) ASSERT_NEAR(m->atoms[0].a_w.w_float, -0.5f, 0.01f);
+    if (m) ASSERT_NEAR(m->atoms[0].a_w.w_float, expectedVal, 0.01f);
     free_instance(x);
 }
 
@@ -539,6 +542,18 @@ static void test_flash_tick_always_redraws() {
     free_instance(x);
 }
 
+static void test_flash_dismissed_by_knob() {
+    // Any knob movement while flash is active should cancel the clock and redraw.
+    t_patch_menu *x = make_instance();
+    send_enc(x, 1);                     // triggers flash, clock armed
+    ASSERT_NEAR(g_clock.delay, 1000.0, 1.0);
+    g_msgs.clear();
+    send_knob(x, 1, 0.0f);             // any knob move — far from latch point
+    ASSERT_EQ(g_clock.delay, -1.0);    // clock cancelled
+    ASSERT(count_display(x, "/oled/line/1") > 0);  // redraw happened
+    free_instance(x);
+}
+
 // ---------------------------------------------------------------------------
 // Tests — inactive knob slots (id = nullptr)
 // ---------------------------------------------------------------------------
@@ -626,6 +641,7 @@ int main() {
     RUN(test_flash_clock_scheduled_1000ms);
     RUN(test_flash_tick_redraws_all_lines);
     RUN(test_flash_tick_always_redraws);
+    RUN(test_flash_dismissed_by_knob);
 
     printf("--- Inactive knob slots ---\n");
     RUN(test_inactive_slot_no_output);

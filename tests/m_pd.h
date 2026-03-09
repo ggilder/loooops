@@ -53,6 +53,7 @@ void      outlet_anything(t_outlet *x, t_symbol *s, int argc, t_atom *argv);
 t_clock  *clock_new(void *owner, t_method fn);
 void      clock_free(t_clock *x);
 void      clock_delay(t_clock *x, double ms);
+void      clock_unset(t_clock *x);
 t_class  *class_new(t_symbol *name, t_newmethod newm, t_method freem,
                     size_t size, int flags, int arg1);
 void      class_addmethod(t_class *c, t_method fn, t_symbol *sel, ...);

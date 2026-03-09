@@ -159,6 +159,7 @@ typedef struct _patch_menu {
     float     values[MAX_PAGES][4];      // current 0–1 normalized position per page/knob
     bool      latched[MAX_PAGES][4];     // soft-takeover latch state
     float     lastKnob[4];               // last raw 0–1 knob value received
+    bool      flashActive;               // true while the page-change flash is visible
 
     char      decorations[MAX_PAGES][4][32]; // decoration suffix per page/knob
 
@@ -291,6 +292,7 @@ static void send_flash(t_patch_menu *x, const char *pageName)
 // Clock callback: flash has expired, redraw normal lines.
 static void flash_tick(t_patch_menu *x)
 {
+    x->flashActive = false;
     redraw_all(x);
 }
 
@@ -312,6 +314,13 @@ static void patch_menu_knob(t_patch_menu *x, t_symbol * /*s*/, int argc, t_atom 
     int page = x->currentPage;
 
     x->lastKnob[k] = raw;
+
+    // Dismiss page-change flash immediately on first knob movement
+    if (x->flashActive) {
+        x->flashActive = false;
+        clock_unset(x->flash_clock);
+        redraw_all(x);
+    }
 
     ControlDef &def = PAGES[page].controls[k];
     if (!def.id) return;  // inactive slot on this page
@@ -366,7 +375,9 @@ static void patch_menu_enc(t_patch_menu *x, t_floatarg f)
         x->latched[newPage][k] = false;
 
     // Show flash, then schedule redraw
+    redraw_all(x);  // ensure display is up-to-date before flash
     send_flash(x, PAGES[newPage].name);
+    x->flashActive = true;
     clock_delay(x->flash_clock, FLASH_MS);
 }
 
