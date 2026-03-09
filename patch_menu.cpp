@@ -43,30 +43,31 @@ struct MenuPage {
 // --- Example pages matching the spec ---
 
 static const float SPEED_SET[] = {
-    -2.0f, -1.5f, -1.3333f, -1.0f, -0.75f, -0.6667f, -0.5f,
-     0.5f,  0.6667f,  0.75f,  1.0f,  1.3333f,  1.5f,  2.0f
+    -2.0f, -1.5f, -1.333333f, -1.0f, -0.75f, -0.666667f, -0.5f,
+     0.5f,  0.666667f,  0.75f,  1.0f,  1.333333f,  1.5f,  2.0f
 };
 static const int SPEED_SET_N = (int)(sizeof(SPEED_SET) / sizeof(SPEED_SET[0]));
+static const float DEFAULT_SPEED = 10.0f / 13.0f; // index 10 → 1.0x
 
 static MenuPage PAGES[] = {
     {
         "Volume",
         {
             { "vol1", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
-            { "vol2", "Volume", 0.2f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
-            { "vol3", "Volume", 0.56f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
+            { "vol2", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
+            { "vol3", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
             INACTIVE_CONTROL,
         }
     },
     {
         "Speed",
         {
-            // Set knob: 0-1 maps to index 0..13
-            { "speed1", "Speed", 6.0f / 13.0f, ControlType::Multiplier, 0.0f, 0.0f,
+            // Set knob: 0-1 maps to index in set
+            { "speed1", "Speed", DEFAULT_SPEED, ControlType::Multiplier, 0.0f, 0.0f,
               SPEED_SET, SPEED_SET_N, NAN },
-            { "speed2", "Speed", 6.0f / 13.0f, ControlType::Multiplier, 0.0f, 0.0f,
+            { "speed2", "Speed", DEFAULT_SPEED, ControlType::Multiplier, 0.0f, 0.0f,
               SPEED_SET, SPEED_SET_N, NAN },
-            { "speed3", "Speed", 10.0f / 13.0f, ControlType::Multiplier, 0.0f, 0.0f,
+            { "speed3", "Speed", DEFAULT_SPEED, ControlType::Multiplier, 0.0f, 0.0f,
               SPEED_SET, SPEED_SET_N, NAN },
             INACTIVE_CONTROL,
         }
