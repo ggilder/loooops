@@ -76,7 +76,7 @@ static MenuPage PAGES[] = {
 
 static const int NUM_PAGES = (int)(sizeof(PAGES) / sizeof(PAGES[0]));
 static const int MAX_PAGES = 16;
-static const int FLASH_MS  = 1000;
+static const int FLASH_MS  = 500;
 
 // ---------------------------------------------------------------------------
 // Value formatting
