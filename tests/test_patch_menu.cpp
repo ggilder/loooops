@@ -138,6 +138,7 @@ static t_patch_menu *make_instance() {
     if (!g_setup_done) { patch_menu_setup(); g_setup_done = true; }
     g_msgs.clear();
     g_outlet_idx = 0;
+    g_clock = {nullptr, nullptr, -1.0};
     t_patch_menu *x = (t_patch_menu *)patch_menu_new();
     g_msgs.clear();
     return x;
@@ -512,10 +513,10 @@ static void test_flash_sends_oled_commands() {
     free_instance(x);
 }
 
-static void test_flash_clock_scheduled_1000ms() {
+static void test_flash_clock_scheduled() {
     t_patch_menu *x = make_instance();
     send_enc(x, 1);
-    ASSERT_NEAR(g_clock.delay, 1000.0, 1.0);
+    ASSERT_NEAR(g_clock.delay, (double)FLASH_MS, 1.0);
     free_instance(x);
 }
 
@@ -545,8 +546,8 @@ static void test_flash_tick_always_redraws() {
 static void test_flash_dismissed_by_knob() {
     // Any knob movement while flash is active should cancel the clock and redraw.
     t_patch_menu *x = make_instance();
-    send_enc(x, 1);                     // triggers flash, clock armed
-    ASSERT_NEAR(g_clock.delay, 1000.0, 1.0);
+    send_enc(x, 1);                              // triggers flash, clock armed
+    ASSERT_NEAR(g_clock.delay, (double)FLASH_MS, 1.0);
     g_msgs.clear();
     send_knob(x, 1, 0.0f);             // any knob move — far from latch point
     ASSERT_EQ(g_clock.delay, -1.0);    // clock cancelled
@@ -638,7 +639,7 @@ int main() {
 
     printf("--- Page-change flash ---\n");
     RUN(test_flash_sends_oled_commands);
-    RUN(test_flash_clock_scheduled_1000ms);
+    RUN(test_flash_clock_scheduled);
     RUN(test_flash_tick_redraws_all_lines);
     RUN(test_flash_tick_always_redraws);
     RUN(test_flash_dismissed_by_knob);
