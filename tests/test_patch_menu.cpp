@@ -238,6 +238,19 @@ static void test_no_latch_just_outside_threshold() {
     free_instance(x);
 }
 
+static void test_latches_on_crossover() {
+    // Simulate fast sweep: send a value below stored, then one above — the knob
+    // crossed over the stored value so should latch even without hitting the threshold.
+    // Speed page default = DEFAULT_SPEED (~0.77); send 0.3 then 0.9.
+    t_patch_menu *x = make_instance();
+    send_enc(x, 1);                 // go to Speed page
+    send_knob(x, 1, 0.3f);         // below stored value — no latch
+    ASSERT_NULL(last_ctrl(x, "speed1"));
+    send_knob(x, 1, 0.9f);         // above stored value — crossed over, should latch
+    ASSERT_NOTNULL(last_ctrl(x, "speed1"));
+    free_instance(x);
+}
+
 static void test_tracks_after_latch() {
     t_patch_menu *x = make_instance();
     send_knob(x, 1, 1.0f);   // latch
@@ -602,6 +615,7 @@ int main() {
     RUN(test_latches_at_exact_value);
     RUN(test_latches_within_threshold);
     RUN(test_no_latch_just_outside_threshold);
+    RUN(test_latches_on_crossover);
     RUN(test_tracks_after_latch);
 
     printf("--- Value formatting / scaling ---\n");

@@ -313,6 +313,7 @@ static void patch_menu_knob(t_patch_menu *x, t_symbol * /*s*/, int argc, t_atom 
     int k    = knobNum - 1;
     int page = x->currentPage;
 
+    float prevKnob = x->lastKnob[k];
     x->lastKnob[k] = raw;
 
     // Dismiss page-change flash immediately on first knob movement
@@ -325,10 +326,16 @@ static void patch_menu_knob(t_patch_menu *x, t_symbol * /*s*/, int argc, t_atom 
     ControlDef &def = PAGES[page].controls[k];
     if (!def.id) return;  // inactive slot on this page
 
-    // Soft-takeover latch check
+    // Soft-takeover latch check: latch if within threshold OR if the knob
+    // crossed over the stored value (catches fast sweeps that skip the window)
     if (!x->latched[page][k]) {
         float currentNorm = x->values[page][k];
-        if (fabsf(raw - currentNorm) <= 0.01f)
+        bool withinThreshold = fabsf(raw - currentNorm) <= 0.01f;
+        // If the knob moved from one side of the current value to the other,
+        // then one (but not both) of the two differences will be negative,
+        // making the product negative.
+        bool crossedOver     = (prevKnob - currentNorm) * (raw - currentNorm) < 0.0f;
+        if (withinThreshold || crossedOver)
             x->latched[page][k] = true;
         else
             return; // not yet latched — ignore
