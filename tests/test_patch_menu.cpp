@@ -39,6 +39,7 @@ static t_class   g_class;
 
 t_symbol s_list     = {"list"};
 t_symbol s_anything = {"anything"};
+t_symbol s_signal   = {"signal"};
 
 static void reset_mock() {
     g_msgs.clear();
@@ -66,6 +67,9 @@ t_outlet *outlet_new(t_object *, t_symbol *) {
     return &g_outlets[g_outlet_idx++];
 }
 
+t_inlet *inlet_new(t_object *, t_pd *, t_symbol *, t_symbol *) { return nullptr; }
+t_inlet *floatinlet_new(t_object *, t_float *) { return nullptr; }
+
 void outlet_list(t_outlet *out, t_symbol *, int argc, t_atom *argv) {
     CapturedMsg m;
     m.outlet   = out;
@@ -90,7 +94,10 @@ void clock_free(t_clock *) {}
 void clock_delay(t_clock *x, double ms) { x->delay = ms; }
 void clock_unset(t_clock *x) { x->delay = -1.0; }
 
-t_class *class_new(t_symbol *, t_newmethod, t_method, size_t size, int, int) {
+void dsp_add(t_perfroutine, int, ...) {}
+float sys_getsr() { return 44100.0f; }
+
+t_class *class_new(t_symbol *, t_newmethod, t_method, size_t size, int, int, ...) {
     g_class.size = size;
     return &g_class;
 }

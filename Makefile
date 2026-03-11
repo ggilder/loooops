@@ -1,4 +1,4 @@
-# Makefile for looper~ and patch_menu externals
+# Makefile for looper~, patch_menu, and stereo_pan~ externals
 
 PD_PATH ?= /usr/local/include        # Path to Pd headers
 
@@ -16,12 +16,16 @@ else
   LDFLAGS += -shared
 endif
 
-LOOPER_TARGET     = looper~.$(EXT)
-PATCH_MENU_TARGET = patch_menu.$(EXT)
+LOOPER_TARGET      = looper~.$(EXT)
+PATCH_MENU_TARGET  = patch_menu.$(EXT)
+STEREO_PAN_TARGET  = stereo_pan~.$(EXT)
 
-TEST_BIN = tests/test_patch_menu
+TEST_PM  = tests/test_patch_menu
+TEST_PAN = tests/test_stereo_pan_tilde
 
-all: $(LOOPER_TARGET) $(PATCH_MENU_TARGET)
+CXXTEST = $(CXX) -std=c++11 -Itests -Wall -Wno-unused -Wno-missing-field-initializers
+
+all: $(LOOPER_TARGET) $(PATCH_MENU_TARGET) $(STEREO_PAN_TARGET)
 
 $(LOOPER_TARGET): looper~.c
 	$(CC) $(CFLAGS) $(CFLAGS_C) -o $@ $< $(LDFLAGS)
@@ -29,16 +33,21 @@ $(LOOPER_TARGET): looper~.c
 $(PATCH_MENU_TARGET): patch_menu.cpp
 	$(CXX) $(CFLAGS) -std=c++11 -o $@ $< $(LDFLAGS)
 
-# Unit tests — compiled against a mock PD API, no PD runtime required.
-# -Itests/ makes the compiler find tests/m_pd.h before the real m_pd.h.
-test: $(TEST_BIN)
-	./$(TEST_BIN); rm -f $(TEST_BIN)
+$(STEREO_PAN_TARGET): stereo_pan~.cpp
+	$(CXX) $(CFLAGS) -std=c++11 -o $@ $< $(LDFLAGS)
 
-$(TEST_BIN): tests/test_patch_menu.cpp patch_menu.cpp tests/m_pd.h
-	$(CXX) -std=c++11 -Itests -Wall -Wno-unused -Wno-missing-field-initializers \
-	    -o $@ tests/test_patch_menu.cpp
+# Unit tests
+test: $(TEST_PM) $(TEST_PAN)
+	./$(TEST_PM);  rm -f $(TEST_PM)
+	./$(TEST_PAN); rm -f $(TEST_PAN)
+
+$(TEST_PM): tests/test_patch_menu.cpp patch_menu.cpp tests/m_pd.h
+	$(CXXTEST) -o $@ tests/test_patch_menu.cpp
+
+$(TEST_PAN): tests/test_stereo_pan_tilde.cpp stereo_pan~.cpp tests/m_pd.h
+	$(CXXTEST) -o $@ tests/test_stereo_pan_tilde.cpp
 
 clean:
-	rm -f $(LOOPER_TARGET) $(PATCH_MENU_TARGET) $(TEST_BIN)
+	rm -f $(LOOPER_TARGET) $(PATCH_MENU_TARGET) $(STEREO_PAN_TARGET) $(TEST_PM) $(TEST_PAN)
 
-.PHONY: all clean
+.PHONY: all clean test

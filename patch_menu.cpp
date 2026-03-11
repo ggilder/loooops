@@ -72,6 +72,15 @@ static MenuPage PAGES[] = {
             INACTIVE_CONTROL,
         }
     },
+    {
+        "Pan",
+        {
+            { "pan1", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan2", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan2", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            INACTIVE_CONTROL,
+        }
+    },
 };
 
 static const int NUM_PAGES   = (int)(sizeof(PAGES) / sizeof(PAGES[0]));
