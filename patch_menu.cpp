@@ -74,9 +74,10 @@ static MenuPage PAGES[] = {
     },
 };
 
-static const int NUM_PAGES = (int)(sizeof(PAGES) / sizeof(PAGES[0]));
-static const int MAX_PAGES = 16;
-static const int FLASH_MS  = 500;
+static const int NUM_PAGES   = (int)(sizeof(PAGES) / sizeof(PAGES[0]));
+static const int MAX_PAGES   = 16;
+static const int FLASH_MS    = 500;
+static const int OLED_COLS   = 21;  // visible character columns on the Organelle screen
 
 // ---------------------------------------------------------------------------
 // Value formatting
@@ -159,9 +160,10 @@ typedef struct _patch_menu {
     float     values[MAX_PAGES][4];      // current 0–1 normalized position per page/knob
     bool      latched[MAX_PAGES][4];     // soft-takeover latch state
     float     lastKnob[4];               // last raw 0–1 knob value received
+    bool      knobOverride[4];           // next value for this knob bypasses latch check
     bool      flashActive;               // true while the page-change flash is visible
 
-    char      decorations[MAX_PAGES][4][32]; // decoration suffix per page/knob
+    char      decorations[MAX_PAGES][4][OLED_COLS + 1]; // decoration suffix per page/knob
 
     t_atom    statusAtoms[64];
     int       statusLen;
@@ -203,8 +205,24 @@ static void send_knob_line(t_patch_menu *x, int page, int knob)
     char valpart[20];
     format_value(valpart, sizeof(valpart), def, normVal, deco);
 
-    char line[32];
-    snprintf(line, sizeof(line), "%d. %s %s", knob + 1, def.label, valpart);
+    // Format into a scratch buffer wide enough to avoid truncation warnings,
+    // then copy at most OLED_COLS chars into the display line buffer.
+    char scratch[64];
+    snprintf(scratch, sizeof(scratch), "%d. %s %s", knob + 1, def.label, valpart);
+
+    char line[OLED_COLS + 1];
+    strncpy(line, scratch, OLED_COLS);
+    line[OLED_COLS] = '\0';
+
+    if (!x->latched[page][knob]) {
+        // Truncate content to OLED_COLS-1 and place asterisk in the last column.
+        line[OLED_COLS - 1] = '\0';
+        int len = (int)strlen(line);
+        while (len < OLED_COLS - 1) line[len++] = ' ';
+        line[OLED_COLS - 1] = '*';
+        line[OLED_COLS]     = '\0';
+    }
+
     send_line_raw(x, knob + 1, line);
 }
 
@@ -326,19 +344,21 @@ static void patch_menu_knob(t_patch_menu *x, t_symbol * /*s*/, int argc, t_atom 
     ControlDef &def = PAGES[page].controls[k];
     if (!def.id) return;  // inactive slot on this page
 
-    // Soft-takeover latch check: latch if within threshold OR if the knob
-    // crossed over the stored value (catches fast sweeps that skip the window)
-    if (!x->latched[page][k]) {
-        float currentNorm = x->values[page][k];
-        bool withinThreshold = fabsf(raw - currentNorm) <= 0.01f;
-        // If the knob moved from one side of the current value to the other,
-        // then one (but not both) of the two differences will be negative,
-        // making the product negative.
-        bool crossedOver     = (prevKnob - currentNorm) * (raw - currentNorm) < 0.0f;
-        if (withinThreshold || crossedOver)
-            x->latched[page][k] = true;
-        else
-            return; // not yet latched — ignore
+    // knobOverride: bypass latch check for this one value, then clear the flag
+    if (x->knobOverride[k]) {
+        x->knobOverride[k] = false;
+    } else {
+        // Soft-takeover latch check: latch if within threshold OR if the knob
+        // crossed over the stored value (catches fast sweeps that skip the window)
+        if (!x->latched[page][k]) {
+            float currentNorm = x->values[page][k];
+            bool withinThreshold = fabsf(raw - currentNorm) <= 0.01f;
+            bool crossedOver     = (prevKnob - currentNorm) * (raw - currentNorm) < 0.0f;
+            if (withinThreshold || crossedOver)
+                x->latched[page][k] = true;
+            else
+                return; // not yet latched — ignore
+        }
     }
 
     float outValue;
@@ -420,7 +440,7 @@ static void patch_menu_decorate(t_patch_menu *x, t_symbol * /*s*/, int argc, t_a
     const char *id = atom_getsymbol(&argv[0])->s_name;
 
     // Build decoration text from remaining atoms (may be empty)
-    char deco[32] = "";
+    char deco[OLED_COLS + 1] = "";
     for (int i = 1; i < argc; i++) {
         char tmp[32];
         if (argv[i].a_type == A_FLOAT)
@@ -446,6 +466,14 @@ static void patch_menu_decorate(t_patch_menu *x, t_symbol * /*s*/, int argc, t_a
             }
         }
     }
+}
+
+// knobOverride <N>  — the next value received for knob N bypasses the latch check
+static void patch_menu_knobOverride(t_patch_menu *x, t_floatarg f)
+{
+    int knobNum = (int)f;
+    if (knobNum < 1 || knobNum > 4) return;
+    x->knobOverride[knobNum - 1] = true;
 }
 
 // ---------------------------------------------------------------------------
@@ -513,4 +541,6 @@ extern "C" void patch_menu_setup(void)
                     gensym("status"), A_GIMME, A_NULL);
     class_addmethod(patch_menu_class, (t_method)patch_menu_decorate,
                     gensym("decorate"), A_GIMME, A_NULL);
+    class_addmethod(patch_menu_class, (t_method)patch_menu_knobOverride,
+                    gensym("knobOverride"), A_FLOAT, A_NULL);
 }

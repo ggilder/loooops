@@ -160,6 +160,10 @@ static void send_enc(t_patch_menu *x, int dir) {
     patch_menu_enc(x, (float)dir);
 }
 
+static void send_knob_override(t_patch_menu *x, int n) {
+    patch_menu_knobOverride(x, (float)n);
+}
+
 // Find the last ctrl output message for a given parameter id.
 // With outlet_anything the id is the message selector; atoms[0] is the value.
 static const CapturedMsg *last_ctrl(t_patch_menu *x, const char *id) {
@@ -292,6 +296,29 @@ static void test_display_line_prefix() {
     const CapturedMsg *line = last_line(x, 1);
     ASSERT_NOTNULL(line);
     ASSERT(strncmp(line_text(line), "1. ", 3) == 0);
+    free_instance(x);
+}
+
+static void test_unlatched_line_has_asterisk() {
+    // Before latch, line should end with '*' at position OLED_COLS-1.
+    t_patch_menu *x = make_instance();
+    send_enc(x, 1);   // go to Speed page — knobs unlatched
+    flash_tick(x);    // redraw so we get knob lines (not the flash overlay)
+    const CapturedMsg *line = last_line(x, 1);
+    ASSERT_NOTNULL(line);
+    const char *txt = line_text(line);
+    ASSERT_EQ(txt[OLED_COLS - 1], '*');
+    free_instance(x);
+}
+
+static void test_latched_line_no_asterisk() {
+    // After latch, '*' must be gone.
+    t_patch_menu *x = make_instance();
+    send_knob(x, 1, 1.0f);   // latch vol1 at default
+    const CapturedMsg *line = last_line(x, 1);
+    ASSERT_NOTNULL(line);
+    const char *txt = line_text(line);
+    ASSERT(strchr(txt, '*') == nullptr);
     free_instance(x);
 }
 
@@ -569,6 +596,54 @@ static void test_flash_dismissed_by_knob() {
 }
 
 // ---------------------------------------------------------------------------
+// Tests — knobOverride
+// ---------------------------------------------------------------------------
+
+static void test_knob_override_bypasses_latch() {
+    // Knob starts unlatched; override flag lets the next value through anyway.
+    t_patch_menu *x = make_instance();
+    send_enc(x, 1);                     // Speed page — all knobs unlatched
+    g_msgs.clear();
+    send_knob_override(x, 1);           // flag knob 1 for override
+    send_knob(x, 1, 0.0f);             // far from latch point — would normally be ignored
+    ASSERT_NOTNULL(last_ctrl(x, "speed1"));
+    free_instance(x);
+}
+
+static void test_knob_override_preserves_unlatched_state() {
+    // After an override, the knob should remain unlatched.
+    t_patch_menu *x = make_instance();
+    send_enc(x, 1);
+    send_knob_override(x, 1);
+    send_knob(x, 1, 0.0f);             // override fires
+    ASSERT(!x->latched[1][0]);          // still unlatched
+    free_instance(x);
+}
+
+static void test_knob_override_preserves_latched_state() {
+    // Override on an already-latched knob leaves it latched.
+    t_patch_menu *x = make_instance();
+    send_knob(x, 1, 1.0f);             // latch vol1
+    ASSERT(x->latched[0][0]);
+    send_knob_override(x, 1);
+    send_knob(x, 1, 0.5f);             // override fires
+    ASSERT(x->latched[0][0]);           // still latched
+    free_instance(x);
+}
+
+static void test_knob_override_consumed_after_one_value() {
+    // Flag is cleared after the first value — subsequent values obey normal latch.
+    t_patch_menu *x = make_instance();
+    send_enc(x, 1);
+    send_knob_override(x, 1);
+    send_knob(x, 1, 0.0f);             // override — goes through
+    g_msgs.clear();
+    send_knob(x, 1, 0.1f);             // no override, still unlatched — ignored
+    ASSERT_NULL(last_ctrl(x, "speed1"));
+    free_instance(x);
+}
+
+// ---------------------------------------------------------------------------
 // Tests — inactive knob slots (id = nullptr)
 // ---------------------------------------------------------------------------
 
@@ -622,6 +697,8 @@ int main() {
     RUN(test_percentage_output_value);
     RUN(test_percentage_display_text);
     RUN(test_display_line_prefix);
+    RUN(test_unlatched_line_has_asterisk);
+    RUN(test_latched_line_no_asterisk);
 
     printf("--- Set knob (index-based snap) ---\n");
     RUN(test_set_knob_default_index);
@@ -657,6 +734,12 @@ int main() {
     RUN(test_flash_tick_redraws_all_lines);
     RUN(test_flash_tick_always_redraws);
     RUN(test_flash_dismissed_by_knob);
+
+    printf("--- knobOverride ---\n");
+    RUN(test_knob_override_bypasses_latch);
+    RUN(test_knob_override_preserves_unlatched_state);
+    RUN(test_knob_override_preserves_latched_state);
+    RUN(test_knob_override_consumed_after_one_value);
 
     printf("--- Inactive knob slots ---\n");
     RUN(test_inactive_slot_no_output);
