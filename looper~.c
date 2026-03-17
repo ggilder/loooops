@@ -480,7 +480,7 @@ void looper_tilde_setup(void) {
                              (t_method)looper_free,
                              sizeof(t_looper),
                              CLASS_DEFAULT,
-                             0);
+                             A_GIMME, 0);
 
     CLASS_MAINSIGNALIN(looper_class, t_looper, f);
     class_addmethod(looper_class, (t_method)looper_dsp, gensym("dsp"), A_CANT, 0);
