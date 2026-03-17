@@ -86,7 +86,7 @@ static MenuPage PAGES[] = {
 
 static const int NUM_PAGES   = (int)(sizeof(PAGES) / sizeof(PAGES[0]));
 static const int MAX_PAGES   = 16;
-static const int FLASH_MS    = 500;
+static const int FLASH_MS    = 400;
 static const int OLED_COLS   = 21;  // visible character columns on the Organelle screen
 
 // ---------------------------------------------------------------------------
