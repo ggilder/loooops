@@ -76,10 +76,10 @@ static MenuPage PAGES[] = {
     {
         "Pan",
         {
-            { "pan1", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
-            { "pan2", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
-            { "pan3", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
-            { "pan4", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan1", "Pan", 0.3f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan2", "Pan", 0.45f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan3", "Pan", 0.55f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan4", "Pan", 0.7f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
         }
     },
 };
