@@ -56,7 +56,7 @@ static MenuPage PAGES[] = {
             { "vol1", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
             { "vol2", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
             { "vol3", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
-            INACTIVE_CONTROL,
+            { "vol4", "Volume", 1.0f, ControlType::Percentage, 0.0f, 100.0f, nullptr, 0, NAN },
         }
     },
     {
@@ -69,7 +69,8 @@ static MenuPage PAGES[] = {
               SPEED_SET, SPEED_SET_N, NAN },
             { "speed3", "Speed", DEFAULT_SPEED, ControlType::Multiplier, 0.0f, 0.0f,
               SPEED_SET, SPEED_SET_N, NAN },
-            INACTIVE_CONTROL,
+            { "speed4", "Speed", DEFAULT_SPEED, ControlType::Multiplier, 0.0f, 0.0f,
+              SPEED_SET, SPEED_SET_N, NAN },
         }
     },
     {
@@ -77,8 +78,8 @@ static MenuPage PAGES[] = {
         {
             { "pan1", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
             { "pan2", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
-            { "pan2", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
-            INACTIVE_CONTROL,
+            { "pan3", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
+            { "pan4", "Pan", 0.5f, ControlType::Percentage, -100.0f, 100.0f, nullptr, 0, NAN },
         }
     },
 };
