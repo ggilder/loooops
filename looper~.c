@@ -58,8 +58,13 @@ void report_state(t_looper *x, t_looper_state state) {
     if (state == LOOPER_RECORDING || state == LOOPER_PLAYING) {
         // Compose list: symbol + time remaining
         t_atom out_list[2];
-        t_symbol *state_sym = gensym(state == LOOPER_RECORDING ? "recording" : "playing");
-        SETSYMBOL(&out_list[0], state_sym);
+        const char *label;
+        if (state == LOOPER_RECORDING && x->loop_end_set) {
+            label = "dubbing";
+        } else {
+            label = state == LOOPER_RECORDING ? "recording" : "playing";
+        }
+        SETSYMBOL(&out_list[0], gensym(label));
         t_float time_remaining = (t_float)(x->loop_end - x->read_pos) / sys_getsr();
         if (x->speed != 0) time_remaining /= fabsf(x->speed);
         SETFLOAT(&out_list[1], time_remaining);
