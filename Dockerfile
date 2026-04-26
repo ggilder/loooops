@@ -7,5 +7,4 @@ RUN apt-get update && apt-get install -y \
     ca-certificates \
     wget \
     libasound2-dev \
-    puredata-dev \
     && rm -rf /var/lib/apt/lists/*

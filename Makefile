@@ -1,6 +1,6 @@
 # Makefile for looper~, patch_menu, and stereo_pan~ externals
 
-PD_PATH ?= /usr/local/include        # Path to Pd headers
+PD_PATH ?= pd                        # Path to Pd headers (vendored from Pd-0.56-2.app)
 
 # Detect platform
 UNAME_S := $(shell uname -s)
